@@ -19,9 +19,11 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l4xx_ll_gpio.h"
+#include "task.h"
 #include "usart.h"
 #include "gpio.h"
 #include <stdint.h>
+#include "port.h"
 
 #define TASK_STACK_SIZE 256
 
@@ -59,7 +61,46 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-         
+
+__attribute__((aligned(8)))
+uint32_t task_1_stack[TASK_STACK_SIZE];
+
+// uint32_t *sp_task1 = &task_1_stack[TASK_STACK_SIZE];
+OSThread thread1;
+
+__attribute__((used, noinline))
+void blink_LED_slow() {
+
+  for (;;) {
+    LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
+    for (volatile int i = 0; i < 20000000; i++) {
+      i++;
+    }
+  }
+}
+
+__attribute__((aligned(8)))
+uint32_t task_2_stack[TASK_STACK_SIZE];
+
+// uint32_t *sp_task2 = &task_2_stack[TASK_STACK_SIZE];
+OSThread thread2;
+
+__attribute__((used, noinline))
+void blink_LED_fast() {
+
+  for (;;) {
+    LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
+    for (volatile int i = 0; i < 5000000; i++) {
+      i++;
+    }
+  }
+}
+
+OSThread OSCurrent;
+OSThread OSNext;
+
+volatile uint8_t run = 0;
+
 /* USER CODE END 0 */
 
 /**
@@ -83,7 +124,7 @@ int main(void)
   NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
   /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),15, 0));
+  NVIC_SetPriority(SysTick_IRQn, 0);
 
   /* USER CODE BEGIN Init */
 
@@ -100,6 +141,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+
+  OS_Init();
+
+  OSThread_Create(&thread1, &blink_LED_slow, task_1_stack, sizeof(task_1_stack));
+  OSThread_Create(&thread2, &blink_LED_fast, task_2_stack, sizeof(task_2_stack));
+
 
   /* USER CODE END 2 */
 
