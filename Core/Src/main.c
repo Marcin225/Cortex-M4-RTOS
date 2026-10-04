@@ -19,11 +19,13 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l4xx_ll_gpio.h"
-#include "task.h"
 #include "usart.h"
 #include "gpio.h"
 #include <stdint.h>
+
 #include "port.h"
+#include "task.h"
+#include "scheduler.h"
 
 #define TASK_STACK_SIZE 256
 
@@ -96,9 +98,6 @@ void blink_LED_fast() {
   }
 }
 
-OSThread OSCurrent;
-OSThread OSNext;
-
 volatile uint8_t run = 0;
 
 /* USER CODE END 0 */
@@ -124,7 +123,7 @@ int main(void)
   NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
   /* SysTick_IRQn interrupt configuration */
-  NVIC_SetPriority(SysTick_IRQn, 0);
+  NVIC_SetPriority(SysTick_IRQn, 15);
 
   /* USER CODE BEGIN Init */
 
