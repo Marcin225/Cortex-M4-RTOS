@@ -1,9 +1,10 @@
 #include "port.h"
+#include "scheduler.h"
 #include <stdint.h>
 
 void OS_Init(void) {
     // 0xE000ED20 -> System handler priority register 3 (SHPR3)
-    *(volatile uint32_t *)0xE000ED20 |= 0xFFU << 16; // set PendSV priority to the lowest level
+    *(volatile uint32_t *)0xE000ED20 |= (0xFFU << 16); // set PendSV priority to the lowest level
 }
 
 void OSThread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize) {
@@ -31,4 +32,10 @@ void OSThread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler
     *(--sp) = 0x04040404; // R4
 
     threadControlBlock->sp = sp;
+}
+
+void OS_RequestContextSwitch() {
+    if (OS_Current != OS_Next) {
+        *(volatile uint32_t *)0xE000ED04 |= (1U << 28); // set PendSV interrupt status to pending
+    }
 }

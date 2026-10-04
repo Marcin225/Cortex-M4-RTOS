@@ -48,6 +48,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     RTOS/kernel/scheduler.c
     RTOS/kernel/task.c
     RTOS/port/cortex_m4/port.c
+    RTOS/port/cortex_m4/portasm.s
 )
 
 # Add include paths
