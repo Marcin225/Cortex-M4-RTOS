@@ -9,6 +9,7 @@ typedef void (*OSThreadHandler)(void);
 
 void OSThread_Create(OSThread *ThreadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize);
 void OS_Init(void);
+void OS_Start(void);
 
 void OS_RequestContextSwitch();
 
