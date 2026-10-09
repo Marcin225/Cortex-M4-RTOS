@@ -20,10 +20,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32l4xx_it.h"
-
-#include "port.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "port.h"
+#include "stm32l4xx_ll_gpio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -183,16 +183,16 @@ void DebugMon_Handler(void)
   * @brief This function handles System tick timer.
   */
 
-volatile int OS_tickCtr = 0; // ************************************************************ here ************************************************************************
+volatile int OS_tickCtr = 0; // ************************************************************ here *********************************************************
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
   OS_tickCtr++; // ************************************************************ here ************************************************************************
-  /* USER CODE END SysTick_IRQn 0 */
 
   __disable_irq();
   OS_RequestContextSwitch();
   __enable_irq();
+  /* USER CODE END SysTick_IRQn 0 */
 
   /* USER CODE BEGIN SysTick_IRQn 1 */
   /* USER CODE END SysTick_IRQn 1 */

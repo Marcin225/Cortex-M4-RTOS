@@ -18,20 +18,16 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32l4xx_ll_gpio.h"
 #include "usart.h"
 #include "gpio.h"
-#include <stdint.h>
-
-#include "port.h"
-#include "task.h"
-#include "scheduler.h"
-
-#define TASK_STACK_SIZE 256
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "stm32l4xx_ll_gpio.h"
+#include <stdint.h>
+#include "port.h"
+#include "task.h"
+#include "scheduler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,7 +37,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define TASK_STACK_SIZE 256
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -89,7 +85,7 @@ __attribute__((used, noinline))
 void blink_LED_fast() {
 
   for (;;) {
-    LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
+    LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
     for (volatile int i = 0; i < 5000000; i++) {
       i++;
     }
@@ -118,8 +114,8 @@ int main(void)
   /* System interrupt init*/
   NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
-  // /* SysTick_IRQn interrupt configuration */
-  // NVIC_SetPriority(SysTick_IRQn, 14); // OS_Init sets SysTick interrupt priority
+  /* SysTick_IRQn interrupt configuration */
+  NVIC_SetPriority(SysTick_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),15, 0)); // OS_Init sets SysTick interrupt priority
 
   /* USER CODE BEGIN Init */
 
@@ -200,6 +196,7 @@ void SystemClock_Config(void)
   LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
 
   LL_Init1msTick(80000000);
+
   LL_SetSystemCoreClock(80000000);
 }
 
