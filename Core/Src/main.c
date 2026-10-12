@@ -70,9 +70,10 @@ void blink_LED_slow() {
 
   for (;;) {
     LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
-    for (volatile int i = 0; i < 20000000; i++) {
-      i++;
-    }
+    OS_Delay(3);
+    // for (volatile int i = 0; i < 20000000; i++) {
+    //   i++;
+    // }
   }
 }
 
@@ -86,9 +87,9 @@ void blink_LED_fast() {
 
   for (;;) {
     LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
-    for (volatile int i = 0; i < 5000000; i++) {
-      i++;
-    }
+    // for (volatile int i = 0; i < 5000000; i++) {
+    //   i++;
+    // }
   }
 }
 
@@ -135,8 +136,8 @@ int main(void)
 
   OS_Init();
 
-  OSThread_Create(&thread1, &blink_LED_slow, task_1_stack, sizeof(task_1_stack));
-  OSThread_Create(&thread2, &blink_LED_fast, task_2_stack, sizeof(task_2_stack));
+  OS_Thread_Create(&thread1, &blink_LED_slow, task_1_stack, sizeof(task_1_stack));
+  OS_Thread_Create(&thread2, &blink_LED_fast, task_2_stack, sizeof(task_2_stack));
 
   OS_Start();
 
