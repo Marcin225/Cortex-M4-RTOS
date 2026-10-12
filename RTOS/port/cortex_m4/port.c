@@ -1,4 +1,5 @@
 #include "port.h"
+#include "list.h"
 #include "scheduler.h"
 #include "rtos_assert.h"
 
@@ -7,29 +8,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-void OS_Init(void) {
-    // 0xE000ED20 -> System handler priority register 3 (SHPR3)
-    *(volatile uint32_t *)0xE000ED20 &= ~((0xFFU << 24) | (0xFF << 16)); // clear priority bits
-
-    *(volatile uint32_t *)0xE000ED20 |= (0xF0U << 16); // set PendSV priority = 15 (lowest)
-    *(volatile uint32_t *)0xE000ED20 |= (0xE0U << 24); // set SysTick priority = 14
-
-    // NVIC_SetPriority(PendSV_IRQn, 15);
-    // NVIC_SetPriority(SysTick_IRQn, 14);
-
-}
-
-void OS_Start(void) {
-    OS_ASSERT(threadNumber > 0);
-
-    LL_SYSTICK_EnableIT(); // enable SysTick (after initializing all threads);
-
-    __disable_irq();
-    OS_RequestContextSwitch();
-    __enable_irq();
-}
-
-void OSThread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize) {
+void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize) {
 
     uint32_t *sp = (uint32_t *)(((uint32_t)stkMem + stkSize) & ~7U); // align stack pointer to the next lower 8-byte boundary
 
@@ -55,10 +34,40 @@ void OSThread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler
 
     threadControlBlock->sp = sp;
 
-    OS_ASSERT(threadNumber < MAX_THREADS);
+    // OS_ASSERT(threadNumber < MAX_THREADS);
 
-    threadPointerList[threadNumber++] = threadControlBlock;
+    // threadPointerList[threadNumber++] = threadControlBlock;
+    threadControlBlock->stateNode.owner = threadControlBlock;
+    OS_List_InsertEnd(&readyList, &(threadControlBlock->stateNode));
+    threadNumber++;
 
+}
+
+void OS_Init(void) {
+    // 0xE000ED20 -> System handler priority register 3 (SHPR3)
+    *(volatile uint32_t *)0xE000ED20 &= ~((0xFFU << 24) | (0xFF << 16)); // clear priority bits
+
+    *(volatile uint32_t *)0xE000ED20 |= (0xF0U << 16); // set PendSV priority = 15 (lowest)
+    *(volatile uint32_t *)0xE000ED20 |= (0xE0U << 24); // set SysTick priority = 14
+
+    // NVIC_SetPriority(PendSV_IRQn, 15);
+    // NVIC_SetPriority(SysTick_IRQn, 14);
+
+    OS_List_Init(&readyList);
+    OS_List_Init(&blockedList);
+
+    OS_Thread_Create(&idleThread, &idle_Thread, idleThreadStack, sizeof(idleThreadStack));
+
+}
+
+void OS_Start(void) {
+    OS_ASSERT(threadNumber > 0);
+
+    LL_SYSTICK_EnableIT(); // enable SysTick (after initializing all threads);
+
+    __disable_irq();
+    OS_RequestContextSwitch();
+    __enable_irq();
 }
 
 void OS_RequestContextSwitch() {
