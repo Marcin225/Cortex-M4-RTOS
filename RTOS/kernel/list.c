@@ -3,9 +3,6 @@
 #include "rtos_assert.h"
 #include <stdint.h>
 
-OS_List blockedList;
-OS_List readyList;
-
 void OS_List_Init(OS_List *list) {
     OS_ASSERT(list != NULL);
 

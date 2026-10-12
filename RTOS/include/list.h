@@ -19,9 +19,6 @@ typedef struct {
 
 } OS_List;
 
-extern OS_List blockedList;
-extern OS_List readyList;
-
 void OS_List_Init(OS_List *list);
 void OS_List_Insert(OS_List *list, OS_ListItem *element);
 void OS_List_InsertEnd(OS_List *list, OS_ListItem *element);

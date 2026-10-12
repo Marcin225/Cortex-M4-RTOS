@@ -8,8 +8,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize) {
-
+uint32_t *OS_Port_InitStack(OSThreadHandler threadHandler, void *stkMem, size_t stkSize) {
     uint32_t *sp = (uint32_t *)(((uint32_t)stkMem + stkSize) & ~7U); // align stack pointer to the next lower 8-byte boundary
 
     // Cortex-M hardware automatically saves these registers on exception entry
@@ -32,48 +31,23 @@ void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandle
     *(--sp) = 0x05050505; // R5
     *(--sp) = 0x04040404; // R4
 
-    threadControlBlock->sp = sp;
-
-    // OS_ASSERT(threadNumber < MAX_THREADS);
-
-    // threadPointerList[threadNumber++] = threadControlBlock;
-    threadControlBlock->stateNode.owner = threadControlBlock;
-    OS_List_InsertEnd(&readyList, &(threadControlBlock->stateNode));
-    threadNumber++;
-
+    return sp; 
 }
 
-void OS_Init(void) {
+void OS_Port_Init(void) {
     // 0xE000ED20 -> System handler priority register 3 (SHPR3)
     *(volatile uint32_t *)0xE000ED20 &= ~((0xFFU << 24) | (0xFF << 16)); // clear priority bits
 
     *(volatile uint32_t *)0xE000ED20 |= (0xF0U << 16); // set PendSV priority = 15 (lowest)
     *(volatile uint32_t *)0xE000ED20 |= (0xE0U << 24); // set SysTick priority = 14
-
-    // NVIC_SetPriority(PendSV_IRQn, 15);
-    // NVIC_SetPriority(SysTick_IRQn, 14);
-
-    OS_List_Init(&readyList);
-    OS_List_Init(&blockedList);
-
-    OS_Thread_Create(&idleThread, &idle_Thread, idleThreadStack, sizeof(idleThreadStack));
-
 }
 
-void OS_Start(void) {
-    OS_ASSERT(threadNumber > 0);
+void OS_Port_RequestContextSwitch(void) {
+
+    *(volatile uint32_t *)0xE000ED04 |= (1U << 28); // set PendSV interrupt status to pending
+}
+
+void OS_Port_EnableTick(void) {
 
     LL_SYSTICK_EnableIT(); // enable SysTick (after initializing all threads);
-
-    __disable_irq();
-    OS_RequestContextSwitch();
-    __enable_irq();
-}
-
-void OS_RequestContextSwitch() {
-    OS_ChooseNextThread();
-
-    if (OS_Current != OS_Next) {
-        *(volatile uint32_t *)0xE000ED04 |= (1U << 28); // set PendSV interrupt status to pending
-    }
 }

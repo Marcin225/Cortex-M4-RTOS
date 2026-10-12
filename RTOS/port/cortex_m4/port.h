@@ -5,12 +5,9 @@
 #include "stddef.h"
 #include "task.h"
 
-typedef void (*OSThreadHandler)(void);
-
-void OS_Thread_Create(OSThread *ThreadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize);
-void OS_Init(void);
-void OS_Start(void);
-
-void OS_RequestContextSwitch();
+uint32_t *OS_Port_InitStack(OSThreadHandler threadHandler, void *stkMem, size_t stkSize);
+void OS_Port_Init(void);
+void OS_Port_EnableTick(void);
+void OS_Port_RequestContextSwitch(void);
 
 #endif
