@@ -16,7 +16,9 @@ void OS_List_Init(OS_List *list) {
 }
 
 void OS_List_Insert(OS_List *list, OS_ListItem *element) {
-    OS_ASSERT(list != NULL && element != NULL && element != &(list->endNode));
+    OS_ASSERT(list != NULL);
+    OS_ASSERT(element != NULL);
+    OS_ASSERT(element != &(list->endNode));
     
     OS_ListItem *listIterator;
 
@@ -34,7 +36,9 @@ void OS_List_Insert(OS_List *list, OS_ListItem *element) {
 }
 
 void OS_List_InsertEnd(OS_List *list, OS_ListItem *element) {
-    OS_ASSERT(list != NULL && element != NULL && element != &(list->endNode));
+    OS_ASSERT(list != NULL);
+    OS_ASSERT(element != NULL);
+    OS_ASSERT(element != &(list->endNode));
 
     element->next = &(list->endNode);
     element->prev = list->endNode.prev;
@@ -46,7 +50,10 @@ void OS_List_InsertEnd(OS_List *list, OS_ListItem *element) {
 }
 
 void OS_List_Remove(OS_List *list, OS_ListItem *element) {
-    OS_ASSERT(list != NULL && element != NULL && list->numberOfItems > 0 && element != &(list->endNode));
+    OS_ASSERT(list != NULL);
+    OS_ASSERT(element != NULL);
+    OS_ASSERT(list->numberOfItems > 0);
+    OS_ASSERT(element != &(list->endNode));
 
     if (list->currentNode == element) {
         list->currentNode = list->currentNode->prev;

@@ -1,3 +1,5 @@
+#include "rtos_config.h"
+
 .syntax unified
 .cpu cortex-m4
 .thumb
@@ -11,15 +13,18 @@
 
 
 PendSV_Handler:
-    // __disable_irq();
-    cpsid   i // disable interrupts
+    // enter critical section
+    mov     r0, #OS_BASEPRI_MASK // move OS_BASEPRI_MASK into r0
+    msr     BASEPRI, r0 // store OS_BASEPRI_MASK into BASEPRI register
+    dsb // finish pending memory accesses 
+    isb // synchronize instruction execution
 
     // if (OS_Current != (OSThread *)NULL) {
     ldr     r3, =OS_Current // load OS_Current into r3
     ldr     r2, [r3] // dereference value
     cbz     r2, Pend_restore // if first task -> jump to Pend_restore
 
-    mrs     r0, PSP // save PSP pointer
+    mrs     r0, PSP // load current thread stack pointer
     stmdb   r0!, {r4-r11} // push registers r4-r11 on stack 
 
     // OS_Current->sp = sp;
@@ -36,8 +41,9 @@ Pend_restore:
     ldmia   r0!, {r4-r11} // pop registers r4-r11 on stack
     msr     PSP, r0 // store current task sp into PSP register
 
-    // __enable_irq();
-    cpsie   i // enable interrupts
+    // exit critical section
+    mov     r0, #0
+    msr     BASEPRI, r0 // remove interrupt priority threshold
 
     // ***************************************************************** optimization needed *****************************************
     ldr     lr, =0xFFFFFFFD // set EXC_RETURN to Thread mode with PSP

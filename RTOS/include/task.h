@@ -16,6 +16,6 @@ typedef struct {
 
 }OSThread;
 
-void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, void *stkMem, size_t stkSize);
+void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, uint8_t priority, void *stkMem, size_t stkSize);
 
 #endif
