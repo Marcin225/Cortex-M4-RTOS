@@ -136,8 +136,8 @@ int main(void)
 
   OS_Init();
 
-  OS_Thread_Create(&thread1, &blink_LED_slow, task_1_stack, sizeof(task_1_stack));
-  OS_Thread_Create(&thread2, &blink_LED_fast, task_2_stack, sizeof(task_2_stack));
+  OS_Thread_Create(&thread1, &blink_LED_slow, 1, task_1_stack, sizeof(task_1_stack));
+  OS_Thread_Create(&thread2, &blink_LED_fast, 1, task_2_stack, sizeof(task_2_stack));
 
   OS_Start();
 

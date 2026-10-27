@@ -6,22 +6,22 @@
 #include <stdint.h>
 #include "list.h"
 
-#define IDLE_THREAD_STACK_SIZE      40
+#define IDLE_THREAD_STACK_SIZE                  40
+#define OS_MAX_PRIORITIES                       16
 
 static volatile uint32_t OS_TickCtr;
 
 OSThread * volatile OS_Current = NULL;
 OSThread * volatile OS_Next = NULL;
 
-static OS_List readyList;
+static OS_List readyList[OS_MAX_PRIORITIES];
 static OS_List delayedList;
+static uint32_t readyListBitMap = 0;
 
 __attribute__((aligned(8)))
 static uint32_t idleThreadStack[IDLE_THREAD_STACK_SIZE];
 
 static OSThread idleThread;
-
-uint8_t threadNumber = 0;
 
 static void OS_IdleThread(void);
 
@@ -31,30 +31,38 @@ void OS_Init(void) {
     OS_Current = NULL;
     OS_Next = NULL;
 
-    OS_List_Init(&readyList);
+    for (int i = 0; i < OS_MAX_PRIORITIES; i++) {
+        OS_List_Init(&readyList[i]);
+    }
     OS_List_Init(&delayedList);
 
     OS_Port_Init();
 
-    OS_Thread_Create(&idleThread, &OS_IdleThread, idleThreadStack, sizeof(idleThreadStack));
+    OS_Thread_Create(&idleThread, &OS_IdleThread, 0, idleThreadStack, sizeof(idleThreadStack));
 }
 
 void OS_Start(void) {
-    OS_ASSERT(readyList.numberOfItems > 0);
+    OS_ASSERT(readyListBitMap > 0);
 
     OS_Port_EnableTick();
 
-    __disable_irq();
+    uint32_t criticalStatus = OS_Port_EnterCritical();
+
     OS_RequestContextSwitch();
-    __enable_irq();
+
+    OS_Port_ExitCritical(criticalStatus);
 }
 
-void OS_Scheduler_AddThreadToReadyList(OSThread *threadControlBlock) {
+void OS_Scheduler_AddThreadToReadyList(OSThread *threadControlBlock, uint8_t priority) {
     OS_ASSERT(threadControlBlock != NULL);
+    OS_ASSERT(priority >= 0 && priority < 16);
 
-    __disable_irq();
-    OS_List_InsertEnd(&readyList, &(threadControlBlock->stateNode));
-    __enable_irq();
+    uint32_t criticalStatus = OS_Port_EnterCritical();
+
+    OS_List_InsertEnd(&readyList[priority], &(threadControlBlock->stateNode));
+    readyListBitMap |= 1 << priority;
+
+    OS_Port_ExitCritical(criticalStatus);
 }
 
 void OS_IncrementTick(void) {
@@ -69,17 +77,20 @@ void OS_Delay(uint32_t tickCount) {
     OS_ASSERT(OS_Current != NULL);
     OS_ASSERT(OS_Current != &idleThread);
 
-    __disable_irq();
+    uint32_t criticalStatus = OS_Port_EnterCritical();
+
     uint32_t wakeTick = OS_GetTickCount() + tickCount;
 
     OS_Current->stateNode.tickCount = wakeTick; // ******************* overflow optimization needed ******************
 
-    OS_List_Remove(&readyList, &(OS_Current->stateNode));
+    OS_List_Remove(&readyList[OS_Current->priority], &(OS_Current->stateNode));
+    if (readyList[OS_Current->priority].numberOfItems == 0) {
+        readyListBitMap &= ~(1 << OS_Current->priority);
+    }
     OS_List_Insert(&delayedList, &(OS_Current->stateNode));
-
-    
+  
     OS_RequestContextSwitch();
-    __enable_irq();
+    OS_Port_ExitCritical(criticalStatus);
 }
 
 void OS_RequestContextSwitch(void) {
@@ -95,22 +106,27 @@ void OS_ChooseNextThread(void) {
     while (delayedList.numberOfItems > 0) {
         OS_ListItem *firstDelayedNode = delayedList.endNode.next;
 
+        OSThread *firstDelayedNodeTCB = firstDelayedNode->owner;
+
         if (firstDelayedNode->tickCount <= OS_TickCtr) {
             OS_List_Remove(&delayedList, firstDelayedNode);
-            OS_List_InsertEnd(&readyList, firstDelayedNode);
+            OS_List_InsertEnd(&readyList[firstDelayedNodeTCB->priority], firstDelayedNode);
+            readyListBitMap |= (1 << firstDelayedNodeTCB->priority);
 
         }else {
             break;
         }
     }
 
-    readyList.currentNode = readyList.currentNode->next;
+    uint8_t priorityIndex = 31 - __CLZ(readyListBitMap);
 
-    if (readyList.currentNode == &(readyList.endNode)) {
-        readyList.currentNode = readyList.currentNode->next;
+    readyList[priorityIndex].currentNode = readyList[priorityIndex].currentNode->next;
+
+    if (readyList[priorityIndex].currentNode == &(readyList[priorityIndex].endNode)) {
+        readyList[priorityIndex].currentNode = readyList[priorityIndex].currentNode->next;
     }
 
-    OS_Next = readyList.currentNode->owner;
+    OS_Next = readyList[priorityIndex].currentNode->owner;
 }
 
 static void OS_IdleThread(void) {

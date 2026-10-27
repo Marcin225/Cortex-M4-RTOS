@@ -8,12 +8,10 @@
 extern OSThread * volatile OS_Current;
 extern OSThread * volatile OS_Next;
 
-extern uint8_t threadNumber;
-
 void OS_Init(void);
 void OS_Start(void);
 
-void OS_Scheduler_AddThreadToReadyList(OSThread *threadControlBlock);
+void OS_Scheduler_AddThreadToReadyList(OSThread *threadControlBlock, uint8_t priority);
 
 void OS_IncrementTick(void);
 uint32_t OS_GetTickCount(void);

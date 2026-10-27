@@ -2,6 +2,7 @@
 #include "list.h"
 #include "scheduler.h"
 #include "rtos_assert.h"
+#include "rtos_config.h"
 
 #include "stm32l476xx.h"
 #include "stm32l4xx_ll_cortex.h"
@@ -50,4 +51,17 @@ void OS_Port_RequestContextSwitch(void) {
 void OS_Port_EnableTick(void) {
 
     LL_SYSTICK_EnableIT(); // enable SysTick (after initializing all threads);
+}
+
+uint32_t OS_Port_EnterCritical(void) {
+    uint32_t prev = __get_BASEPRI();
+    __set_BASEPRI(OS_BASEPRI_MASK);
+    __DSB(); // finish pending memory accesses
+    __ISB(); // synchronize instruction execution
+
+    return prev; // save previous BASEPRI
+}
+
+void OS_Port_ExitCritical(uint32_t prevBASEPRI) {
+    __set_BASEPRI(prevBASEPRI);
 }
