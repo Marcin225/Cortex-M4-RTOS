@@ -188,12 +188,12 @@ void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
   LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
-  
+
+  uint32_t criticalStatus = OS_Port_EnterCritical();
   OS_IncrementTick();
 
-  __disable_irq();
   OS_RequestContextSwitch();
-  __enable_irq();
+  OS_Port_ExitCritical(criticalStatus);
 
   LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
   /* USER CODE END SysTick_IRQn 0 */

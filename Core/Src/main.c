@@ -70,7 +70,7 @@ void blink_LED_slow() {
 
   for (;;) {
     LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
-    OS_Delay(3);
+    OS_Delay(10);
     // for (volatile int i = 0; i < 20000000; i++) {
     //   i++;
     // }

@@ -16,6 +16,11 @@ OSThread * volatile OS_Next = NULL;
 
 static OS_List readyList[OS_MAX_PRIORITIES];
 static OS_List delayedList;
+static OS_List overflowList;
+static OS_List *delayedListPointer;
+static OS_List *overflowListPointer;
+
+
 static uint32_t readyListBitMap = 0;
 
 __attribute__((aligned(8)))
@@ -26,7 +31,7 @@ static OSThread idleThread;
 static void OS_IdleThread(void);
 
 void OS_Init(void) {
-    OS_TickCtr = 0;
+    OS_TickCtr = UINT32_MAX - 5;
 
     OS_Current = NULL;
     OS_Next = NULL;
@@ -35,6 +40,9 @@ void OS_Init(void) {
         OS_List_Init(&readyList[i]);
     }
     OS_List_Init(&delayedList);
+    OS_List_Init(&overflowList);
+    delayedListPointer = &delayedList;
+    overflowListPointer = &overflowList;
 
     OS_Port_Init();
 
@@ -65,7 +73,14 @@ void OS_Scheduler_AddThreadToReadyList(OSThread *threadControlBlock, uint8_t pri
     OS_Port_ExitCritical(criticalStatus);
 }
 
+// must be called from SysTick while the kernel critical section is active
 void OS_IncrementTick(void) {
+    // check if oveflow appeared
+    if (OS_TickCtr == UINT32_MAX) {
+        OS_List *temp = delayedListPointer;
+        delayedListPointer = overflowListPointer;
+        overflowListPointer = temp;
+    }
     OS_TickCtr++;
 }
 
@@ -81,13 +96,20 @@ void OS_Delay(uint32_t tickCount) {
 
     uint32_t wakeTick = OS_GetTickCount() + tickCount;
 
-    OS_Current->stateNode.tickCount = wakeTick; // ******************* overflow optimization needed ******************
+    OS_Current->stateNode.tickCount = wakeTick;
 
     OS_List_Remove(&readyList[OS_Current->priority], &(OS_Current->stateNode));
     if (readyList[OS_Current->priority].numberOfItems == 0) {
         readyListBitMap &= ~(1 << OS_Current->priority);
     }
-    OS_List_Insert(&delayedList, &(OS_Current->stateNode));
+
+    // check if oveflow appeared
+    if (wakeTick < OS_GetTickCount()) {
+        OS_List_Insert(overflowListPointer, &(OS_Current->stateNode));
+
+    }else {
+        OS_List_Insert(delayedListPointer, &(OS_Current->stateNode));
+    }
   
     OS_RequestContextSwitch();
     OS_Port_ExitCritical(criticalStatus);
@@ -103,13 +125,13 @@ void OS_RequestContextSwitch(void) {
 
 void OS_ChooseNextThread(void) {
 
-    while (delayedList.numberOfItems > 0) {
-        OS_ListItem *firstDelayedNode = delayedList.endNode.next;
+    while (delayedListPointer->numberOfItems > 0) {
+        OS_ListItem *firstDelayedNode = delayedListPointer->endNode.next;
 
         OSThread *firstDelayedNodeTCB = firstDelayedNode->owner;
 
         if (firstDelayedNode->tickCount <= OS_TickCtr) {
-            OS_List_Remove(&delayedList, firstDelayedNode);
+            OS_List_Remove(delayedListPointer, firstDelayedNode);
             OS_List_InsertEnd(&readyList[firstDelayedNodeTCB->priority], firstDelayedNode);
             readyListBitMap |= (1 << firstDelayedNodeTCB->priority);
 
