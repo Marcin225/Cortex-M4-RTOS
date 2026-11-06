@@ -23,6 +23,7 @@ uint32_t *OS_Port_InitStack(OSThreadHandler threadHandler, void *stkMem, size_t 
     *(--sp) = 0x00000000; // R0
 
     // software-saved registers: manually push the remaining CPU context
+    *(--sp) = 0xFFFFFFFD; // init EXC_RETURN: thread mode, PSP, basic frame
     *(--sp) = 0x11111111; // R11
     *(--sp) = 0x10101010; // R10
     *(--sp) = 0x09090909; // R9

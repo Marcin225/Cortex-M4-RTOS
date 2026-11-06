@@ -6,4 +6,6 @@
 
 #define OS_BASEPRI_MASK                         (OS_MAX_SYSCALL_INTERRUPT_PRIORITY << (8 - OS_NVIC_PRIO_BITS)) // encoded BASEPRI threshold
 
+#define OS_STACK_BASE_OFFSET                    4
+
 #endif
