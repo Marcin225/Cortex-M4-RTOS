@@ -14,37 +14,51 @@
 
 PendSV_Handler:
     // enter critical section
-    mov     r0, #OS_BASEPRI_MASK // move OS_BASEPRI_MASK into r0
-    msr     BASEPRI, r0 // store OS_BASEPRI_MASK into BASEPRI register
+    mov         r0, #OS_BASEPRI_MASK // move OS_BASEPRI_MASK into r0
+    msr         BASEPRI, r0 // store OS_BASEPRI_MASK into BASEPRI register
     dsb // finish pending memory accesses 
     isb // synchronize instruction execution
 
-    // if (OS_Current != (OSThread *)NULL) {
-    ldr     r3, =OS_Current // load OS_Current into r3
-    ldr     r2, [r3] // dereference value
-    cbz     r2, Pend_restore // if first task -> jump to Pend_restore
+    // get current task
+    ldr         r3, =OS_Current // load OS_Current into r3
+    ldr         r2, [r3] // load current task TCB
+    cbz         r2, Pend_restore // if first task -> jump to Pend_restore
 
-    mrs     r0, PSP // load current thread stack pointer
-    stmdb   r0!, {r4-r11} // push registers r4-r11 on stack 
+    mrs         r0, PSP // load current task stack pointer
 
-    // OS_Current->sp = sp;
-    str     r0, [r2] // save PSP pointer
+    // save FPU context if needed
+    tst         r14, #0x10 // check EXC_RETURN FP frame bit (0xFFFFFFED)
+    it          eq // execute next instruction if bit is 0
+    vstmdbeq    r0!, {s16-s31} // save FPU registers
+
+    // save task context
+    stmdb       r0!, {r4-r11, lr} // save R4-R11 and EXC_RETURN
+    str         r0, [r2] // save stack pointer in TCB
+
+    // check if stack overflow occured sp < stackBase
+    ldr         r1, [r2, #OS_STACK_BASE_OFFSET] // load stack base
+    cmp         r0, r1 // compare SP with stack base
+    blo         OS_StackOverflowHandler // branch if SP is below stack base
 
 Pend_restore:
-    // OS_Current = OS_Next;
-    ldr     r1, =OS_Next // load OS_Next into r1
-    ldr     r2, [r1] // load next task TCB into r2
-    str     r2, [r3] // save next task TCB
+    // switch current task
+    ldr         r1, =OS_Next // load address of OS_Next
+    ldr         r2, [r1] // load next task TCB
+    str         r2, [r3] // OS_Current = OS_Next
 
-    // sp = OS_Current->sp;
-    ldr     r0, [r2] // load current task sp into r0
-    ldmia   r0!, {r4-r11} // pop registers r4-r11 on stack
-    msr     PSP, r0 // store current task sp into PSP register
+    // restore task context
+    ldr         r0, [r2] // load task stack pointer
+    ldmia       r0!, {r4-r11, lr} // restore R4-R11 and EXC_RETURN
+
+    // restore FPU context if needed
+    tst         r14, #0x10 // check EXC_RETURN FP frame bit (0xFFFFFFED)
+    it          eq // execute next instruction if bit is 0
+    vldmiaeq    r0!, {s16-s31} // restore FPU registers
+
+    msr         PSP, r0 // restore task stack pointer
 
     // exit critical section
-    mov     r0, #0
-    msr     BASEPRI, r0 // remove interrupt priority threshold
+    mov         r0, #0
+    msr         BASEPRI, r0 // remove interrupt priority threshold
 
-    // ***************************************************************** optimization needed *****************************************
-    ldr     lr, =0xFFFFFFFD // set EXC_RETURN to Thread mode with PSP
-    bx      lr // return
+    bx          lr // return to task

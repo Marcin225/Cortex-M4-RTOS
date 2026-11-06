@@ -31,7 +31,7 @@ static OSThread idleThread;
 static void OS_IdleThread(void);
 
 void OS_Init(void) {
-    OS_TickCtr = UINT32_MAX - 5;
+    OS_TickCtr = 0;
 
     OS_Current = NULL;
     OS_Next = NULL;
@@ -146,6 +146,10 @@ void OS_ChooseNextThread(void) {
 
     if (readyList[priorityIndex].currentNode == &(readyList[priorityIndex].endNode)) {
         readyList[priorityIndex].currentNode = readyList[priorityIndex].currentNode->next;
+    }
+
+    if (OS_Current != NULL) {
+        OS_Task_CheckStackPattern(OS_Current);
     }
 
     OS_Next = readyList[priorityIndex].currentNode->owner;
