@@ -1,4 +1,5 @@
 build
 build-tests
+build-target-tests
 mx.scratch
 !.settings

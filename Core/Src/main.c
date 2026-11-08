@@ -28,6 +28,10 @@
 #include "port.h"
 #include "task.h"
 #include "scheduler.h"
+
+#ifdef OS_TARGET_TESTS
+#include "target_tests.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -129,10 +133,14 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
+  #ifdef OS_TARGET_TESTS
+  OS_TargetTests_Run();
+  #endif
+
   OS_Init();
 
-  OS_Thread_Create(&thread1, &blink_LED_slow, 2, task_1_stack, sizeof(task_1_stack));
-  OS_Thread_Create(&thread2, &blink_LED_fast, 1, task_2_stack, sizeof(task_2_stack));
+  OS_Thread_Create(&thread1, &blink_LED_slow, 1, task_1_stack, sizeof(task_1_stack));
+  OS_Thread_Create(&thread2, &blink_LED_fast, 2, task_2_stack, sizeof(task_2_stack));
 
   OS_Start();
 
