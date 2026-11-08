@@ -5,9 +5,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include "stm32l4xx.h"
 
+#ifndef OS_TEST
 _Static_assert(offsetof(OSThread, stackBase) == 4, "stackBase offset mismatch");
+#endif
 
 void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, uint8_t priority, void *stkMem, size_t stkSize) {
     OS_ASSERT(threadControlBlock != NULL);
@@ -58,10 +59,9 @@ void OS_Task_CheckStackPattern(OSThread *threadControlBlock) {
     OS_ASSERT(threadControlBlock->stackBase[3] == 0xA5A5A5A5);
 }
 
-__attribute__((noreturn))
-void OS_StackOverflowHandler(void) {
-    __disable_irq(); 
-    __BKPT(0); // stop the debugger at this line
+noreturn void OS_StackOverflowHandler(void) {
+    OS_Port_DisableInterrupts();
+    OS_Port_Breakpoint(); // stop the debugger at this line
 
     while (1) { 
 

@@ -34,6 +34,9 @@ enable_language(C ASM)
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
 
+# 
+option(OS_TARGET_TESTS "Build RTOS target tests" OFF)
+
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
@@ -59,6 +62,22 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     RTOS/include
     RTOS/port/cortex_m4
 )
+
+#
+if(OS_TARGET_TESTS)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        tests/target/target_test_runner.c
+        tests/target/test_delay.c
+    )
+
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+        tests/target
+    )
+
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
+        OS_TARGET_TESTS
+    )
+endif()
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
