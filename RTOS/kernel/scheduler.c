@@ -1,5 +1,4 @@
 #include "scheduler.h"
-#include "cmsis_gcc.h"
 #include "port.h"
 #include "rtos_assert.h"
 #include "task.h"
@@ -23,8 +22,7 @@ static OS_List *overflowListPointer;
 
 static uint32_t readyListBitMap = 0;
 
-__attribute__((aligned(8)))
-static uint32_t idleThreadStack[IDLE_THREAD_STACK_SIZE];
+_Alignas(8) static uint32_t idleThreadStack[IDLE_THREAD_STACK_SIZE];
 
 static OSThread idleThread;
 
@@ -32,6 +30,7 @@ static void OS_IdleThread(void);
 
 void OS_Init(void) {
     OS_TickCtr = 0;
+    readyListBitMap = 0;
 
     OS_Current = NULL;
     OS_Next = NULL;
@@ -140,7 +139,7 @@ void OS_ChooseNextThread(void) {
         }
     }
 
-    uint8_t priorityIndex = 31 - __CLZ(readyListBitMap);
+    uint8_t priorityIndex = OS_Port_CalculatePriorityIdx(readyListBitMap);
 
     readyList[priorityIndex].currentNode = readyList[priorityIndex].currentNode->next;
 
@@ -157,6 +156,30 @@ void OS_ChooseNextThread(void) {
 
 static void OS_IdleThread(void) {
     for (;;) {
-        __WFI();
+        OS_Port_WaitForInterrupt();
     }
 }
+
+#ifdef OS_TEST
+
+void OS_Test_SetTickCount(uint32_t tickCount) {
+    OS_TickCtr = tickCount;
+}
+
+void OS_Test_InitTickLists(void) {
+    OS_List_Init(&delayedList);
+    OS_List_Init(&overflowList);
+
+    delayedListPointer = &delayedList;
+    overflowListPointer = &overflowList;
+}
+
+OS_List *OS_Test_GetDelayedListPointer(void) {
+    return delayedListPointer;
+}
+
+OS_List *OS_Test_GetOverflowListPointer(void) {
+    return overflowListPointer;
+}
+
+#endif

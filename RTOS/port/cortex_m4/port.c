@@ -1,4 +1,5 @@
 #include "port.h"
+#include "cmsis_gcc.h"
 #include "list.h"
 #include "scheduler.h"
 #include "rtos_assert.h"
@@ -65,4 +66,20 @@ uint32_t OS_Port_EnterCritical(void) {
 
 void OS_Port_ExitCritical(uint32_t prevBASEPRI) {
     __set_BASEPRI(prevBASEPRI);
+}
+
+uint8_t OS_Port_CalculatePriorityIdx(uint32_t value) {
+    return 31 - __CLZ(value);
+}
+
+void OS_Port_WaitForInterrupt(void) {
+    __WFI();
+}
+
+void OS_Port_DisableInterrupts(void) {
+    __disable_irq(); 
+}
+
+void OS_Port_Breakpoint(void) {
+    __BKPT(0); // stop the debugger at this line
 }

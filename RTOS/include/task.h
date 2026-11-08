@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "list.h"
 #include "stddef.h"
+#include <stdnoreturn.h>
 
 typedef void (*OSThreadHandler)(void);
 
@@ -24,6 +25,6 @@ void OS_Task_CheckStackPattern(OSThread *threadControlBlock);
 size_t OS_GetHighWaterMark(void);
 
 
-void OS_StackOverflowHandler(void) __attribute__((noreturn));
+noreturn void OS_StackOverflowHandler(void);
 
 #endif
