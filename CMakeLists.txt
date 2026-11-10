@@ -52,6 +52,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     RTOS/kernel/task.c
     RTOS/kernel/rtos_assert.c
     RTOS/kernel/list.c
+    RTOS/kernel/semaphore.c
     RTOS/port/cortex_m4/port.c
     RTOS/port/cortex_m4/portasm.s
 )

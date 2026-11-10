@@ -6,7 +6,6 @@
 #include "list.h"
 
 #define IDLE_THREAD_STACK_SIZE                  40
-#define OS_MAX_PRIORITIES                       16
 
 static volatile uint32_t OS_TickCtr;
 
@@ -55,19 +54,7 @@ void OS_Start(void) {
 
     uint32_t criticalStatus = OS_Port_EnterCritical();
 
-    OS_RequestContextSwitch();
-
-    OS_Port_ExitCritical(criticalStatus);
-}
-
-void OS_Scheduler_AddThreadToReadyList(OSThread *threadControlBlock, uint8_t priority) {
-    OS_ASSERT(threadControlBlock != NULL);
-    OS_ASSERT(priority >= 0 && priority < 16);
-
-    uint32_t criticalStatus = OS_Port_EnterCritical();
-
-    OS_List_InsertEnd(&readyList[priority], &(threadControlBlock->stateNode));
-    readyListBitMap |= 1 << priority;
+    OS_Scheduler_RequestContextSwitch();
 
     OS_Port_ExitCritical(criticalStatus);
 }
@@ -87,6 +74,21 @@ uint32_t OS_GetTickCount(void) {
     return OS_TickCtr;
 }
 
+// must be called while the kernel critical section is active
+void OS_Scheduler_RemoveThreadFromReadyList(OSThread *threadControlBlock) {
+    OS_List_Remove(&readyList[threadControlBlock->priority], &threadControlBlock->stateNode);
+    if (readyList[threadControlBlock->priority].numberOfItems == 0) {
+        readyListBitMap &= ~(1UL << threadControlBlock->priority);
+    }
+}
+
+// must be called while the kernel critical section is active
+void OS_Scheduler_InsertThreadToReadyList(OSThread *threadControlBlock) {
+    OS_List_InsertEnd(&readyList[threadControlBlock->priority], &threadControlBlock->stateNode);
+
+    readyListBitMap |= (1UL << threadControlBlock->priority);
+}
+
 void OS_Delay(uint32_t tickCount) {
     OS_ASSERT(OS_Current != NULL);
     OS_ASSERT(OS_Current != &idleThread);
@@ -99,7 +101,7 @@ void OS_Delay(uint32_t tickCount) {
 
     OS_List_Remove(&readyList[OS_Current->priority], &(OS_Current->stateNode));
     if (readyList[OS_Current->priority].numberOfItems == 0) {
-        readyListBitMap &= ~(1 << OS_Current->priority);
+        readyListBitMap &= ~(1UL << OS_Current->priority);
     }
 
     // check if oveflow appeared
@@ -110,11 +112,11 @@ void OS_Delay(uint32_t tickCount) {
         OS_List_Insert(delayedListPointer, &(OS_Current->stateNode));
     }
   
-    OS_RequestContextSwitch();
+    OS_Scheduler_RequestContextSwitch();
     OS_Port_ExitCritical(criticalStatus);
 }
 
-void OS_RequestContextSwitch(void) {
+void OS_Scheduler_RequestContextSwitch(void) {
     OS_ChooseNextThread();
 
     if (OS_Current != OS_Next) {
@@ -125,14 +127,14 @@ void OS_RequestContextSwitch(void) {
 void OS_ChooseNextThread(void) {
 
     while (delayedListPointer->numberOfItems > 0) {
-        OS_ListItem *firstDelayedNode = delayedListPointer->endNode.next;
+        OS_ListItem *firstDelayedNode = (OS_ListItem *)delayedListPointer->endNode.next;
 
-        OSThread *firstDelayedNodeTCB = firstDelayedNode->owner;
+        OSThread *firstDelayedNodeTCB = (OSThread *)firstDelayedNode->owner;
 
         if (firstDelayedNode->tickCount <= OS_TickCtr) {
             OS_List_Remove(delayedListPointer, firstDelayedNode);
             OS_List_InsertEnd(&readyList[firstDelayedNodeTCB->priority], firstDelayedNode);
-            readyListBitMap |= (1 << firstDelayedNodeTCB->priority);
+            readyListBitMap |= (1UL << firstDelayedNodeTCB->priority);
 
         }else {
             break;

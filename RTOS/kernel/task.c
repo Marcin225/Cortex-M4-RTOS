@@ -13,7 +13,7 @@ _Static_assert(offsetof(OSThread, stackBase) == 4, "stackBase offset mismatch");
 void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandler, uint8_t priority, void *stkMem, size_t stkSize) {
     OS_ASSERT(threadControlBlock != NULL);
     OS_ASSERT(threadHandler != NULL);
-    OS_ASSERT(priority >= 0 && priority < 16);
+    OS_ASSERT(priority < OS_MAX_PRIORITIES);
     OS_ASSERT(stkMem != NULL);
     OS_ASSERT(stkSize > 0);
 
@@ -29,9 +29,12 @@ void OS_Thread_Create(OSThread *threadControlBlock, OSThreadHandler threadHandle
     threadControlBlock->stateNode.prev = NULL;
     threadControlBlock->stateNode.owner = threadControlBlock;
     threadControlBlock->stateNode.tickCount = 0;
-    
-    OS_Scheduler_AddThreadToReadyList(threadControlBlock, priority);
 
+    uint32_t criticalStatus = OS_Port_EnterCritical();
+
+    OS_Scheduler_InsertThreadToReadyList(threadControlBlock);
+
+    OS_Port_ExitCritical(criticalStatus);
 }
 
 size_t OS_GetHighWaterMark(void) {
