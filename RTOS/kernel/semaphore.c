@@ -17,13 +17,13 @@ static void OS_Semaphore_Init(OS_Semaphore_t *semaphore, uint8_t maxCount) {
 }
 
 
-void OS_SemaphoreBin_Init(OS_SemaphoreBin_t *semaphore) {
+void OS_SemaphoreBin_Init(OS_Semaphore_t *semaphore) {
     OS_ASSERT(semaphore != NULL);
 
     OS_Semaphore_Init(semaphore, 1);
 }
 
-void OS_SemaphoreCount_Init(OS_SemaphoreCount_t *semaphore, uint8_t maxCount) {
+void OS_SemaphoreCount_Init(OS_Semaphore_t *semaphore, uint8_t maxCount) {
     OS_ASSERT(semaphore != NULL);
     OS_ASSERT(maxCount < 256);
 
