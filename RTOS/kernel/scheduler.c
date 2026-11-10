@@ -127,9 +127,9 @@ void OS_Scheduler_RequestContextSwitch(void) {
 void OS_ChooseNextThread(void) {
 
     while (delayedListPointer->numberOfItems > 0) {
-        OS_ListItem *firstDelayedNode = delayedListPointer->endNode.next;
+        OS_ListItem *firstDelayedNode = (OS_ListItem *)delayedListPointer->endNode.next;
 
-        OSThread *firstDelayedNodeTCB = firstDelayedNode->owner;
+        OSThread *firstDelayedNodeTCB = (OSThread *)firstDelayedNode->owner;
 
         if (firstDelayedNode->tickCount <= OS_TickCtr) {
             OS_List_Remove(delayedListPointer, firstDelayedNode);
