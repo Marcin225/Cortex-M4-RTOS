@@ -29,6 +29,8 @@
 #include "task.h"
 #include "scheduler.h"
 
+#include "queue.h"
+
 #ifdef OS_TARGET_TESTS
 #include "target_tests.h"
 #endif
@@ -64,6 +66,9 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+OS_Queue_t queue1;
+uint32_t buffer[3];
+
 __attribute__((aligned(8)))
 uint32_t task_1_stack[TASK_STACK_SIZE];
 
@@ -71,10 +76,16 @@ OSThread thread1;
 
 __attribute__((used, noinline))
 void blink_LED_slow() {
-
+  uint32_t counter = 0;
+  // uint32_t counter2 = 1;
   for (;;) {
+    // LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
+    // OS_Delay(3);
+    counter++;
+    // counter2++;
+    OS_Queue_PutItem(&queue1, &counter);
+    // OS_Queue_PutItem(&queue1, &counter2);
     LL_GPIO_TogglePin(GPIOA, LL_GPIO_PIN_5);
-    OS_Delay(3);
   }
 }
 
@@ -85,10 +96,22 @@ OSThread thread2;
 
 __attribute__((used, noinline))
 void blink_LED_fast() {
+  uint32_t expected = 1;
+  uint32_t received = 0;
 
   for (;;) {
-    LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
-    OS_Delay(2);
+    // LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+    // OS_Delay(2);
+    OS_Queue_GetItem(&queue1, &received);
+    if (received == expected) {
+      expected++;
+      LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_8);
+    }else {
+      OS_Port_DisableInterrupts();
+      OS_Port_Breakpoint();
+      while (1) {}
+    }
+    OS_Delay(4);
   }
 }
 
@@ -137,10 +160,12 @@ int main(void)
   OS_TargetTests_Run();
   #endif
 
+  OS_Queue_Init(&queue1, buffer, 3, sizeof(uint32_t));
+
   OS_Init();
 
-  OS_Thread_Create(&thread1, &blink_LED_slow, 1, task_1_stack, sizeof(task_1_stack));
-  OS_Thread_Create(&thread2, &blink_LED_fast, 2, task_2_stack, sizeof(task_2_stack));
+  OS_Thread_Create(&thread1, &blink_LED_slow, 2, task_1_stack, sizeof(task_1_stack));
+  OS_Thread_Create(&thread2, &blink_LED_fast, 1, task_2_stack, sizeof(task_2_stack));
 
   OS_Start();
 
