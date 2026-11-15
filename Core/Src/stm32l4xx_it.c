@@ -187,7 +187,7 @@ void DebugMon_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
-  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
+  // LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
 
   uint32_t criticalStatus = OS_Port_EnterCritical();
   OS_IncrementTick();
@@ -195,7 +195,7 @@ void SysTick_Handler(void)
   OS_Scheduler_RequestContextSwitch();
   OS_Port_ExitCritical(criticalStatus);
 
-  LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
+  // LL_GPIO_TogglePin(GPIOC, LL_GPIO_PIN_9);
   /* USER CODE END SysTick_IRQn 0 */
 
   /* USER CODE BEGIN SysTick_IRQn 1 */

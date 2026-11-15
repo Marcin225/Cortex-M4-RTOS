@@ -81,9 +81,9 @@ void test_insert_should_sort_elements_by_tick_count(void) {
     item2.tickCount = 10;
     item3.tickCount = 20;
 
-    OS_List_Insert(&list, &item1);
-    OS_List_Insert(&list, &item2);
-    OS_List_Insert(&list, &item3);
+    OS_List_InsertByTick(&list, &item1);
+    OS_List_InsertByTick(&list, &item2);
+    OS_List_InsertByTick(&list, &item3);
 
     TEST_ASSERT_EQUAL_UINT32(3, list.numberOfItems);
 
@@ -101,8 +101,8 @@ void test_insert_should_place_equal_tick_after_existing_element(void) {
     item1.tickCount = 10;
     item2.tickCount = 10;
 
-    OS_List_Insert(&list, &item1);
-    OS_List_Insert(&list, &item2);
+    OS_List_InsertByTick(&list, &item1);
+    OS_List_InsertByTick(&list, &item2);
 
     TEST_ASSERT_EQUAL_UINT32(2, list.numberOfItems);
 

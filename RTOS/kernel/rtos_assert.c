@@ -1,6 +1,7 @@
 #include "rtos_assert.h"
 #include "port.h"
 
+// catch-all trap for unexpected system errors
 void OS_AssertFailed(const char *file, int line) {
     // store information about file and line where assert failed
     (void)file;
