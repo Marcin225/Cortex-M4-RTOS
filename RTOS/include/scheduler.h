@@ -4,8 +4,7 @@
 #include "task.h"
 #include "stddef.h"
 #include <stdint.h>
-
-#define OS_MAX_PRIORITIES                       16
+#include "rtos_config.h"
 
 extern OSThread * volatile OS_Current;
 extern OSThread * volatile OS_Next;

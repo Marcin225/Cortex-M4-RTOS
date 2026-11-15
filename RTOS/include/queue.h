@@ -1,10 +1,11 @@
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef OS_QUEUE_H
+#define OS_QUEUE_H
 
 #include "list.h"
 #include <stddef.h>
 #include <stdint.h>
 
+// blocking queue with separate waitlists to suspend readers when empty and writers when full
 typedef struct {
     OS_List writeWaitList;
     OS_List readWaitList;

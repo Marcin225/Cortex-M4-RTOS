@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+// initializes the initial thread stack frame for the first context restore
 uint32_t *OS_Port_InitStack(OSThreadHandler threadHandler, void *stkMem, size_t stkSize) {
     uint32_t *sp = (uint32_t *)(((uint32_t)stkMem + stkSize) & ~7U); // align stack pointer to the next lower 8-byte boundary
 
@@ -37,11 +38,16 @@ uint32_t *OS_Port_InitStack(OSThreadHandler threadHandler, void *stkMem, size_t 
     return sp; 
 }
 
+// configures RTOS exception priorities
 void OS_Port_Init(void) {
     // 0xE000ED20 -> System handler priority register 3 (SHPR3)
     *(volatile uint32_t *)0xE000ED20 &= ~((0xFFU << 24) | (0xFF << 16)); // clear priority bits
 
+    // PendSV must have the lowest priority so context switching happens
+    // only after higher-priority interrupts have completed
     *(volatile uint32_t *)0xE000ED20 |= (0xF0U << 16); // set PendSV priority = 15 (lowest)
+
+    // SysTick runs slightly above PendSV so it can request a context switch
     *(volatile uint32_t *)0xE000ED20 |= (0xE0U << 24); // set SysTick priority = 14
 }
 
@@ -68,6 +74,7 @@ void OS_Port_ExitCritical(uint32_t prevBASEPRI) {
     __set_BASEPRI(prevBASEPRI);
 }
 
+// returns the index of the highest set priority bit
 uint8_t OS_Port_CalculatePriorityIdx(uint32_t value) {
     return 31 - __CLZ(value);
 }

@@ -1,5 +1,5 @@
-#ifndef SEMAPHORE_H
-#define SEMAPHORE_H
+#ifndef OS_SEMAPHORE_H
+#define OS_SEMAPHORE_H
 
 #include <stdint.h>
 #include "list.h"
